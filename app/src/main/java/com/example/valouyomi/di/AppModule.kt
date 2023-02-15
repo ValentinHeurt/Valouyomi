@@ -27,7 +27,7 @@ object AppModule {
             .build()
             .create(ManganatoApi::class.java)
     }
-
+    // Récupérer les repository en fonction du module choisis par l'user
     @Provides
     @Singleton
     @Named("ManganatoRepository")

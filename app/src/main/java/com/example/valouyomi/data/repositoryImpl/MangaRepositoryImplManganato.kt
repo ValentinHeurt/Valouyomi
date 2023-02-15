@@ -17,10 +17,10 @@ class MangaRepositoryImplManganato @Inject constructor(
     val api: ManganatoApi
 ) : MangaRepository {
 
-    override suspend fun searchManga(): Flow<Resource<List<MangaThumbnail>>> = flow {
+    override fun searchManga(): Flow<Resource<List<MangaThumbnail>>> = flow {
         try {
             emit(Resource.Loading())
-            val mangaThumbnails = api.searchManga()
+            val mangaThumbnails = api.searchManga(null, null, null, null, null, page = "1")
             emit(Resource.Success(mangaThumbnails))
         }catch (e: HttpException){
             emit(Resource.Error(e.localizedMessage ?: "An unexpected error occured"))
@@ -29,7 +29,7 @@ class MangaRepositoryImplManganato @Inject constructor(
         }
     }
 
-    override suspend fun getGenres(): Flow<Resource<List<String>>> = flow {
+    override fun getGenres(): Flow<Resource<List<String>>> = flow {
         try {
             emit(Resource.Loading())
             val genres = api.getGenres()

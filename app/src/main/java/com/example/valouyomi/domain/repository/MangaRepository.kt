@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface MangaRepository {
 
-    suspend fun searchManga(): Flow<Resource<List<MangaThumbnail>>>
+    fun searchManga(): Flow<Resource<List<MangaThumbnail>>>
 
-    suspend fun getGenres(): Flow<Resource<List<String>>>
+    fun getGenres(): Flow<Resource<List<String>>>
 }
