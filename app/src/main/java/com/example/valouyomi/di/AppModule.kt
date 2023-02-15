@@ -27,10 +27,9 @@ object AppModule {
             .build()
             .create(ManganatoApi::class.java)
     }
-    // Récupérer les repository en fonction du module choisis par l'user
+    // Ajouter des named quand il y en aura plusieurs
     @Provides
     @Singleton
-    @Named("ManganatoRepository")
     fun provideManganatoRepository(api : ManganatoApi) : MangaRepository {
         return MangaRepositoryImplManganato(api)
     }
