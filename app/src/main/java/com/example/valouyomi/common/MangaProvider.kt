@@ -1,6 +1,7 @@
 package com.example.valouyomi.common
 
 import com.example.valouyomi.R
+import com.example.valouyomi.domain.repository.MangaRepository
 import com.example.valouyomi.presentation.Screen
 
 
@@ -10,5 +11,5 @@ enum class MangaProvider(
     val lang: String,
     val route : String
 ) {
-    MANGANATO("Manganato", R.drawable.manganato, "English",Screen.MangaSearchScreen.route)
+    MANGANATO(Constants.MANGANATO, R.drawable.manganato, "English",Screen.MangaSearchScreen.route)
 }

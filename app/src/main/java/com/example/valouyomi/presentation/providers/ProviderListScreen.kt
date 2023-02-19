@@ -32,7 +32,7 @@ fun ProviderListScreen(
                 MangaProviderItem(
                     mangaProvider = provider,
                     onItemClicked = {
-                        navController.navigate(provider.route)
+                        navController.navigate(provider.route + "/${provider.providerName}")
                     }
                 )
             }

@@ -13,6 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.valouyomi.common.Constants
 import com.example.valouyomi.presentation.Screen
 import com.example.valouyomi.presentation.manga_search.MangaSearchScreen
 import com.example.valouyomi.presentation.providers.ProviderListScreen
@@ -37,7 +38,7 @@ class MainActivity : ComponentActivity() {
                             ProviderListScreen(navController = navController)
                         }
                         composable(
-                            route = Screen.MangaSearchScreen.route
+                            route = Screen.MangaSearchScreen.route + "/{${Constants.PROVIDER_PARAM}}"
                         ){
                             MangaSearchScreen(navController = navController)
                         }

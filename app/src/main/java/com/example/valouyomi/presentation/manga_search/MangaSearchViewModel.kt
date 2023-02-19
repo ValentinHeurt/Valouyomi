@@ -2,27 +2,38 @@ package com.example.valouyomi.presentation.manga_search
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.Navigator
+import com.example.valouyomi.common.Constants
 import com.example.valouyomi.common.Resource
 import com.example.valouyomi.domain.repository.MangaRepository
 import com.example.valouyomi.presentation.Screen
+import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Provider
 
 @HiltViewModel
 class MangaSearchViewModel @Inject constructor(
-    private val mangaRepository: MangaRepository,
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
+    private val mangaRepositoryMap: Map<String, @JvmSuppressWildcards MangaRepository>
 ): ViewModel(){
 
+    val param = savedStateHandle.get<String>(Constants.PROVIDER_PARAM).toString()
+
+    val mangaRepository = mangaRepositoryMap[param]?: throw java.lang.IllegalArgumentException("No dependency found for : $param")
     private val _mangaThumbnailsState = mutableStateOf(MangaSearchState())
     val mangaThumbnailsState: State<MangaSearchState> = _mangaThumbnailsState
     private val _genresState = mutableStateOf(GenreState())
     val genresState: State<GenreState> = _genresState
+
+
     init {
         getMangaThumbnails()
         getGenre()

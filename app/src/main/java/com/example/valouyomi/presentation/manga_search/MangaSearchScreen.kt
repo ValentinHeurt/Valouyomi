@@ -23,6 +23,7 @@ fun MangaSearchScreen(
     navController: NavController,
     viewModel: MangaSearchViewModel = hiltViewModel()
 ){
+
     val mangaThumbnailsState = viewModel.mangaThumbnailsState.value
     val genresState = viewModel.genresState.value
 

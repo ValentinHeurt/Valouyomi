@@ -12,6 +12,7 @@ import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Named
+import javax.inject.Qualifier
 import javax.inject.Singleton
 
 @Module
@@ -30,9 +31,26 @@ object AppModule {
     // Ajouter des named quand il y en aura plusieurs
     @Provides
     @Singleton
+    @Named(Constants.MANGANATO)
     fun provideManganatoRepository(api : ManganatoApi) : MangaRepository {
         return MangaRepositoryImplManganato(api)
     }
+    @Provides
+    @Singleton
+    @Named("Test")
+    fun provideTestRepository(api : ManganatoApi) : MangaRepository {
+        return MangaRepositoryImplManganato(api)
+    }
 
+    @Provides
+    fun provideMangaRepositoryMap(
+        @Named(Constants.MANGANATO) manganatoRepository: MangaRepository,
+        @Named("Test") testRepository: MangaRepository
+    ): Map<String, MangaRepository>{
+        val map = mutableMapOf<String,MangaRepository>()
+        map[Constants.MANGANATO] = manganatoRepository
+        map["Test"] = testRepository
+        return map
+    }
 
 }
