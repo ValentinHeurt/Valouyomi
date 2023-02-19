@@ -1,10 +1,10 @@
 package com.example.valouyomi.presentation.manga_search
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
@@ -27,7 +27,12 @@ fun MangaSearchScreen(
     val genresState = viewModel.genresState.value
 
     Box(modifier = Modifier.fillMaxSize()){
-        LazyColumn(modifier = Modifier.fillMaxSize()){
+        LazyVerticalGrid(
+            modifier = Modifier.fillMaxSize(),
+            columns = GridCells.Fixed(2),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ){
             items(mangaThumbnailsState.mangaThumbnails){ mangaThumbnail ->
                 MangaThumbnailCard(
                     mangaThumbnail = mangaThumbnail,
