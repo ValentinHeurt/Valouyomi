@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.valouyomi.presentation.Screen
 import com.example.valouyomi.presentation.manga_search.MangaSearchScreen
+import com.example.valouyomi.presentation.providers.ProviderListScreen
 import com.example.valouyomi.ui.theme.ValouyomiTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -28,8 +29,13 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     NavHost(
                         navController = navController,
-                        startDestination = Screen.MangaSearchScreen.route
+                        startDestination = Screen.ProviderListScreen.route
                     ) {
+                        composable(
+                            route = Screen.ProviderListScreen.route
+                        ){
+                            ProviderListScreen(navController = navController)
+                        }
                         composable(
                             route = Screen.MangaSearchScreen.route
                         ){

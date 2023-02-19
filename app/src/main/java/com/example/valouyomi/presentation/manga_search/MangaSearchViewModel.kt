@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.valouyomi.common.Resource
 import com.example.valouyomi.domain.repository.MangaRepository
+import com.example.valouyomi.presentation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -20,7 +21,6 @@ class MangaSearchViewModel @Inject constructor(
 
     private val _mangaThumbnailsState = mutableStateOf(MangaSearchState())
     val mangaThumbnailsState: State<MangaSearchState> = _mangaThumbnailsState
-
     private val _genresState = mutableStateOf(GenreState())
     val genresState: State<GenreState> = _genresState
     init {
