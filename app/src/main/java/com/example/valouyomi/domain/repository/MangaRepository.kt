@@ -6,7 +6,14 @@ import kotlinx.coroutines.flow.Flow
 
 interface MangaRepository {
 
-    fun searchManga(): Flow<Resource<List<MangaThumbnail>>>
+    fun searchManga(
+        includedGenres: List<String>? = null,
+        excludedGenres: List<String>? = null,
+        textSearch: String? = null,
+        orderBy: String? = null,
+        status: String? = null,
+        page: String = "1"
+    ): Flow<Resource<List<MangaThumbnail>>>
 
     fun getGenres(): Flow<Resource<List<String>>>
 }

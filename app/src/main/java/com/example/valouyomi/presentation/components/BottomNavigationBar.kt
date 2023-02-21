@@ -14,7 +14,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.valouyomi.common.BottomNavItem
 import com.example.valouyomi.common.Constants
 import com.example.valouyomi.presentation.Screen
 import com.example.valouyomi.presentation.library.LibraryScreen
@@ -50,39 +49,44 @@ fun BottomNavigationBar(
     val mainRoutes = listOf(Screen.LibraryScreen.route, Screen.SettingsScreen.route, Screen.ProviderListScreen.route)
     val backStackEntry = navController.currentBackStackEntryAsState()
     var lastSelected : String = "None"
-    BottomNavigation(
-        modifier = modifier,
-        backgroundColor = Color.Gray,
-        elevation = 5.dp
-    ) {
-        items.forEach { item ->
-            val selected = (item.route == backStackEntry.value?.destination?.route) || (!mainRoutes.contains(backStackEntry.value?.destination?.route) && lastSelected == item.route)
-            if (selected) lastSelected = item.route
-            BottomNavigationItem(
-                selected = selected,
-                onClick = { onItemClicked(item)},
-                selectedContentColor = Color.Blue,
-                unselectedContentColor = Color.DarkGray,
-                icon = {
-                    Column(horizontalAlignment = CenterHorizontally) {
-                        if (item.badgeCount > 0){
-                            BadgedBox(
-                                badge = { Badge{ Text(text = item.badgeCount.toString())}}
-                            ) {
+    if(backStackEntry.value?.destination?.route != Screen.MangaSearchScreen.route) {
+        BottomNavigation(
+            modifier = modifier,
+            backgroundColor = Color.Gray,
+            elevation = 5.dp
+        ) {
+            items.forEach { item ->
+                val selected =
+                    (item.route == backStackEntry.value?.destination?.route) || (!mainRoutes.contains(
+                        backStackEntry.value?.destination?.route
+                    ) && lastSelected == item.route)
+                if (selected) lastSelected = item.route
+                BottomNavigationItem(
+                    selected = selected,
+                    onClick = { onItemClicked(item) },
+                    selectedContentColor = Color.Blue,
+                    unselectedContentColor = Color.DarkGray,
+                    icon = {
+                        Column(horizontalAlignment = CenterHorizontally) {
+                            if (item.badgeCount > 0) {
+                                BadgedBox(
+                                    badge = { Badge { Text(text = item.badgeCount.toString()) } }
+                                ) {
+                                    Icon(imageVector = item.icon, contentDescription = item.name)
+                                }
+                            } else {
                                 Icon(imageVector = item.icon, contentDescription = item.name)
                             }
-                        }else{
-                            Icon(imageVector = item.icon, contentDescription = item.name)
+                            Text(
+                                text = item.name,
+                                textAlign = TextAlign.Center,
+                                fontSize = 10.sp
+                            )
                         }
-                        Text(
-                            text= item.name,
-                            textAlign = TextAlign.Center,
-                            fontSize = 10.sp
-                        )
                     }
-                }
-            )
-        }
+                )
+            }
 
+        }
     }
 }

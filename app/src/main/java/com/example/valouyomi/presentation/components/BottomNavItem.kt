@@ -1,4 +1,4 @@
-package com.example.valouyomi.common
+package com.example.valouyomi.presentation.components
 
 import androidx.compose.ui.graphics.vector.ImageVector
 
