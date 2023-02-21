@@ -1,5 +1,6 @@
 package com.example.valouyomi.presentation.manga_search
 
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -11,6 +12,8 @@ import com.example.valouyomi.common.Constants
 import com.example.valouyomi.common.Resource
 import com.example.valouyomi.domain.repository.MangaRepository
 import com.example.valouyomi.presentation.Screen
+import com.example.valouyomi.presentation.manga_search.util.SearchAppBarState
+import com.example.valouyomi.presentation.manga_search.util.TrailingIconState
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.launchIn
@@ -33,7 +36,9 @@ class MangaSearchViewModel @Inject constructor(
     private val _genresState = mutableStateOf(GenreState())
     val genresState: State<GenreState> = _genresState
 
-
+    val searchAppBarState: MutableState<SearchAppBarState> = mutableStateOf(SearchAppBarState.CLOSED)
+    val searchTextState: MutableState<String> = mutableStateOf("")
+    var trailingIconState: MutableState<TrailingIconState> = mutableStateOf(TrailingIconState.DELETE)
     init {
         getMangaThumbnails()
         getGenre()

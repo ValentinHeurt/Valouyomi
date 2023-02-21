@@ -17,6 +17,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.valouyomi.presentation.Screen
 import com.example.valouyomi.presentation.components.MangaThumbnailCard
+import com.example.valouyomi.presentation.manga_search.components.MangaSearchTopBar
 
 @Composable
 fun MangaSearchScreen(
@@ -27,7 +28,8 @@ fun MangaSearchScreen(
     val mangaThumbnailsState = viewModel.mangaThumbnailsState.value
     val genresState = viewModel.genresState.value
 
-    Box(modifier = Modifier.fillMaxSize()){
+    Column(modifier = Modifier.fillMaxSize()){
+        MangaSearchTopBar(providerName = viewModel.param)
         LazyVerticalGrid(
             modifier = Modifier.fillMaxSize(),
             columns = GridCells.Fixed(2),
@@ -49,11 +51,11 @@ fun MangaSearchScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
-                    .align(Alignment.Center)
+                    .align(alignment = Alignment.CenterHorizontally)
             )
         }
         if(mangaThumbnailsState.isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         }
     }
 
