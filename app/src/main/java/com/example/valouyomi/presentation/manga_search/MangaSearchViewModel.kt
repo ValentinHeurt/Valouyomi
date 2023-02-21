@@ -58,9 +58,11 @@ class MangaSearchViewModel @Inject constructor(
             when(result){
                 is Resource.Success -> {
                     mangaThumbnails.value = result.data ?: emptyList()
+                    isLoading.value = false
                 }
                 is Resource.Error -> {
                     error.value = result.message ?: "Unknown error"
+                    isLoading.value = false
                 }
                 is Resource.Loading -> {
                     isLoading.value = true
