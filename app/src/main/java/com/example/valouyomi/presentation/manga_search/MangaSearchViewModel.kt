@@ -9,6 +9,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.Navigator
+import com.example.valouyomi.common.CheckBoxState
 import com.example.valouyomi.common.Constants
 import com.example.valouyomi.common.Resource
 import com.example.valouyomi.domain.models.MangaThumbnail
@@ -49,12 +50,17 @@ class MangaSearchViewModel @Inject constructor(
     var trailingIconState: MutableState<TrailingIconState> = mutableStateOf(TrailingIconState.DELETE)
     init {
         getMangaThumbnails()
+        println("getGenre Called")
         getGenre()
     }
 
     fun getMangaThumbnails(){
         page = 1
-        mangaRepository.searchManga(textSearch = if (searchTextState.value == "") null else searchTextState.value).onEach { result ->
+        mangaRepository.searchManga(
+            textSearch = if (searchTextState.value == "") null else searchTextState.value,
+            includedGenres = genresState.value.genres.filter { it.value.value == CheckBoxState.SELECTED }.keys.toList(),
+            excludedGenres = genresState.value.genres.filter { it.value.value == CheckBoxState.EXCLUDED }.keys.toList()
+        ).onEach { result ->
             when(result){
                 is Resource.Success -> {
                     mangaThumbnails.value = result.data ?: emptyList()
@@ -62,6 +68,7 @@ class MangaSearchViewModel @Inject constructor(
                 }
                 is Resource.Error -> {
                     error.value = result.message ?: "Unknown error"
+                    mangaThumbnails.value = emptyList()
                     isLoading.value = false
                 }
                 is Resource.Loading -> {
@@ -101,16 +108,19 @@ class MangaSearchViewModel @Inject constructor(
         mangaRepository.getGenres().onEach { result ->
             when(result){
                 is Resource.Success -> {
-                    _genresState.value = GenreState(genres = result.data?.map{ it to false }?.toMap()?.toMutableMap() ?: mutableMapOf())
+                    println("s")
+                    _genresState.value = GenreState(genres = result.data?.map{ it to mutableStateOf(CheckBoxState.UNSELECTED) }?.toMap()?.toMutableMap() ?: mutableMapOf())
                 }
                 is Resource.Error -> {
+                    println("e")
                     _genresState.value = GenreState(error = result.message ?: "Unknown error")
                 }
                 is Resource.Loading -> {
+                    println("l")
                     _genresState.value = GenreState(isLoading = true)
                 }
             }
-        }
+        }.launchIn(viewModelScope)
     }
 
 }

@@ -35,7 +35,6 @@ class MainActivity : ComponentActivity() {
                 Surface(color = MaterialTheme.colors.background) {
                     val navController = rememberNavController()
                     val bottomBarState = rememberSaveable { (mutableStateOf(true)) }
-
                     val visiblesRoutes = listOf(
                         Screen.SettingsScreen.route,
                         Screen.LibraryScreen.route,

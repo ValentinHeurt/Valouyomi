@@ -7,6 +7,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
@@ -19,14 +20,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.valouyomi.presentation.manga_search.MangaSearchViewModel
 import com.example.valouyomi.presentation.manga_search.util.SearchAppBarState
 import com.example.valouyomi.presentation.manga_search.util.TrailingIconState
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun MangaSearchTopBar(
     viewModel: MangaSearchViewModel = hiltViewModel(),
+    sheetState: BottomSheetState,
     providerName: String
 ){
     if(viewModel.searchAppBarState.value == SearchAppBarState.CLOSED){
-        DefaultTopBar(providerName = providerName)
+        DefaultTopBar(providerName = providerName, sheetState = sheetState)
     }
     else{
         SearchTopBar(
@@ -41,11 +45,14 @@ fun MangaSearchTopBar(
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun DefaultTopBar(
     viewModel: MangaSearchViewModel = hiltViewModel(),
-    providerName: String
+    providerName: String,
+    sheetState : BottomSheetState
 ){
+    val scope = rememberCoroutineScope()
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -58,7 +65,7 @@ fun DefaultTopBar(
                 },
                 actions = {
                     SearchAction(onSearchClicked = {viewModel.searchAppBarState.value = SearchAppBarState.OPENED})
-                    FilterAction()
+                    FilterAction(onFilterClicked = { scope.launch { if (sheetState.isCollapsed) sheetState.expand() else sheetState.collapse() }})
                 }
             )
         }
@@ -80,9 +87,9 @@ fun SearchAction(
 }
 
 @Composable
-fun FilterAction(){
+fun FilterAction(onFilterClicked: () -> Unit){
     val context = LocalContext.current
-    IconButton(onClick = { /*TODO*/ }) {
+    IconButton(onClick = onFilterClicked) {
         Icon(
             imageVector = Icons.Filled.FilterList,
             contentDescription = "filter",
