@@ -40,7 +40,8 @@ class MangaRepositoryImplManganato @Inject constructor(
         try {
             emit(Resource.Loading())
             val genres = api.getGenres()
-            emit(Resource.Success(genres))
+            val genresNames = genres.map { it.genre }
+            emit(Resource.Success(genresNames))
         } catch (e: HttpException) {
             emit(Resource.Error(e.localizedMessage ?: "An unexpected error occured"))
         } catch (e: IOException) {

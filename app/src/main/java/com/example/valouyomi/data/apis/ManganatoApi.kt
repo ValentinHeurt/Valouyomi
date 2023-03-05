@@ -1,5 +1,6 @@
 package com.example.valouyomi.data.apis
 
+import com.example.valouyomi.domain.models.Genre
 import com.example.valouyomi.domain.models.MangaThumbnail
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -19,7 +20,7 @@ interface ManganatoApi {
     ): List<MangaThumbnail>
 
     @GET("/genres")
-    suspend fun getGenres(): List<String>
+    suspend fun getGenres(): List<Genre>
 
     @Headers("User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:107.0) Gecko/20100101 Firefox/107.0",
               "Accept: image/avif,image/webp,*/*",

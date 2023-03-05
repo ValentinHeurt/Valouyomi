@@ -101,7 +101,7 @@ class MangaSearchViewModel @Inject constructor(
         mangaRepository.getGenres().onEach { result ->
             when(result){
                 is Resource.Success -> {
-                    _genresState.value = GenreState(genres = result.data ?: emptyList())
+                    _genresState.value = GenreState(genres = result.data?.map{ it to false }?.toMap()?.toMutableMap() ?: mutableMapOf())
                 }
                 is Resource.Error -> {
                     _genresState.value = GenreState(error = result.message ?: "Unknown error")
