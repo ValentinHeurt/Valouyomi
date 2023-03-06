@@ -3,6 +3,7 @@ package com.example.valouyomi.presentation.manga_search
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
@@ -40,6 +41,8 @@ class MangaSearchViewModel @Inject constructor(
     val isLoading: MutableState<Boolean> = mutableStateOf(false)
     val error: MutableState<String> = mutableStateOf("")
 
+    val sortList: MutableState<Map<String, String>> = mutableStateOf(emptyMap())
+
     private val _genresState = mutableStateOf(GenreState())
     val genresState: State<GenreState> = _genresState
 
@@ -48,10 +51,15 @@ class MangaSearchViewModel @Inject constructor(
     val searchAppBarState: MutableState<SearchAppBarState> = mutableStateOf(SearchAppBarState.CLOSED)
     val searchTextState: MutableState<String> = mutableStateOf("")
     var trailingIconState: MutableState<TrailingIconState> = mutableStateOf(TrailingIconState.DELETE)
+
+    val selectedSortProtocol: MutableState<String> = mutableStateOf("")
+
+
     init {
         getMangaThumbnails()
-        println("getGenre Called")
         getGenre()
+        sortList.value = mangaRepository.getSortMap()
+        selectedSortProtocol.value = sortList.value.keys.first()
     }
 
     fun getMangaThumbnails(){
@@ -59,7 +67,8 @@ class MangaSearchViewModel @Inject constructor(
         mangaRepository.searchManga(
             textSearch = if (searchTextState.value == "") null else searchTextState.value,
             includedGenres = genresState.value.genres.filter { it.value.value == CheckBoxState.SELECTED }.keys.toList(),
-            excludedGenres = genresState.value.genres.filter { it.value.value == CheckBoxState.EXCLUDED }.keys.toList()
+            excludedGenres = genresState.value.genres.filter { it.value.value == CheckBoxState.EXCLUDED }.keys.toList(),
+            orderBy = sortList.value[selectedSortProtocol.value]
         ).onEach { result ->
             when(result){
                 is Resource.Success -> {
@@ -83,6 +92,9 @@ class MangaSearchViewModel @Inject constructor(
         page++
         mangaRepository.searchManga(
             textSearch = if (searchTextState.value == "") null else searchTextState.value,
+            includedGenres = genresState.value.genres.filter { it.value.value == CheckBoxState.SELECTED }.keys.toList(),
+            excludedGenres = genresState.value.genres.filter { it.value.value == CheckBoxState.EXCLUDED }.keys.toList(),
+            orderBy = sortList.value[selectedSortProtocol.value],
             page = page.toString()
         ).onEach { result ->
             when(result){

@@ -16,4 +16,6 @@ interface MangaRepository {
     ): Flow<Resource<List<MangaThumbnail>>>
 
     fun getGenres(): Flow<Resource<List<String>>>
+
+    fun getSortMap(): Map<String, String>
 }

@@ -17,6 +17,8 @@ class MangaRepositoryImplManganato @Inject constructor(
     val api: ManganatoApi
 ) : MangaRepository {
 
+    val sort = mapOf<String,String>( "A-Z" to "az"  ,  "Newest" to "newest" ,  "Most viewed" to "topview" ,  "Latest updates" to "Latest updates" )
+
     override fun searchManga(
         includedGenres: List<String>?,
         excludedGenres: List<String>?,
@@ -48,5 +50,11 @@ class MangaRepositoryImplManganato @Inject constructor(
             emit(Resource.Error("Couldn't reach server. Check your internet connection."))
         }
     }
+
+    override fun getSortMap(): Map<String,String> {
+        return sort
+    }
+
+
 
 }
