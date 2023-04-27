@@ -4,8 +4,10 @@ import com.example.valouyomi.common.Resource
 import com.example.valouyomi.domain.models.MangaThumbnail
 import com.example.valouyomi.domain.repository.MangaRepository
 import com.example.valouyomi.data.apis.ManganatoApi
+import com.example.valouyomi.domain.models.Manga
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import okhttp3.Headers
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
@@ -55,6 +57,38 @@ class MangaRepositoryImplManganato @Inject constructor(
         return sort
     }
 
+    override fun getManga(url: String): Flow<Resource<Manga>> = flow {
+        try {
+            emit(Resource.Loading())
+            val manga = api.getManga(url)
+            emit(Resource.Success(manga))
+        } catch (e: HttpException) {
+            emit(Resource.Error(e.localizedMessage ?: "An unexpected error occured"))
+        } catch (e: IOException) {
+            emit(Resource.Error("Couldn't reach server. Check your internet connection."))
+        }
+    }
 
+    override fun getPages(url: String): Flow<Resource<List<String>>> = flow {
+        try {
+            emit(Resource.Loading())
+            val pages = api.getPages(url)
+            emit(Resource.Success(pages))
+        } catch (e: HttpException) {
+            emit(Resource.Error(e.localizedMessage ?: "An unexpected error occured"))
+        } catch (e: IOException) {
+            emit(Resource.Error("Couldn't reach server. Check your internet connection."))
+        }
+    }
+
+    override fun getHeaders(): Headers{
+        val header = Headers.Builder()
+            .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:107.0) Gecko/20100101 Firefox/107.0")
+            .add("Accept", "image/avif,image/webp,*/*")
+            .add("Accept-Language", "fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3")
+            .add("Referer", "https://chapmanganato.com/")
+            .build()
+        return header
+    }
 
 }

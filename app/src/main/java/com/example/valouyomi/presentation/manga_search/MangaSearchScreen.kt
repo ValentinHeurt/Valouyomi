@@ -28,6 +28,8 @@ import com.example.valouyomi.presentation.manga_search.components.FiltersBottomS
 import com.example.valouyomi.presentation.manga_search.components.MangaSearchTopBar
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Composable
 fun MangaSearchScreen(
@@ -73,7 +75,8 @@ fun MangaSearchScreen(
                         MangaThumbnailCard(
                             mangaThumbnail = mangaThumbnail,
                             onItemClicked = {
-                                navController.navigate(Screen.MangaSearchScreen.route + "/${mangaThumbnail.url}")
+                                val encodedUrl = URLEncoder.encode(mangaThumbnail.url, StandardCharsets.UTF_8.toString())
+                                navController.navigate(Screen.MangaScreen.route + "/${encodedUrl}/${viewModel.param}")
                             })
                     }
                 }

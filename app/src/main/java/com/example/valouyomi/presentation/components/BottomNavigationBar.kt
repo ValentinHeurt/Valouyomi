@@ -17,6 +17,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.valouyomi.common.Constants
 import com.example.valouyomi.presentation.Screen
 import com.example.valouyomi.presentation.library.LibraryScreen
+import com.example.valouyomi.presentation.manga_details.MangaScreen
+import com.example.valouyomi.presentation.manga_reader.MangaReaderScreen
 import com.example.valouyomi.presentation.manga_search.MangaSearchScreen
 import com.example.valouyomi.presentation.providers.ProviderListScreen
 import com.example.valouyomi.presentation.settings.SettingsScreen
@@ -35,6 +37,12 @@ fun Navigation(navController: NavHostController, modifier: Modifier){
         }
         composable(Screen.ProviderListScreen.route){
             ProviderListScreen(navController = navController)
+        }
+        composable(Screen.MangaScreen.route + "/{${Constants.MANGA_URL_PARAM}}/{${Constants.PROVIDER_PARAM}}"){
+            MangaScreen(navController = navController)
+        }
+        composable(Screen.MangaReaderScreen.route + "/{${Constants.CHAPTER_URL_PARAM}}/{${Constants.PROVIDER_PARAM}}"){
+            MangaReaderScreen(navController = navController)
         }
     }
 }

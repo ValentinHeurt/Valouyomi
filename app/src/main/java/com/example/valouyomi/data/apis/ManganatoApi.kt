@@ -1,6 +1,7 @@
 package com.example.valouyomi.data.apis
 
 import com.example.valouyomi.domain.models.Genre
+import com.example.valouyomi.domain.models.Manga
 import com.example.valouyomi.domain.models.MangaThumbnail
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -22,12 +23,17 @@ interface ManganatoApi {
     @GET("/genres")
     suspend fun getGenres(): List<Genre>
 
+    @GET("/manga")
+    suspend fun getManga(
+        @Header("url") url: String
+    ): Manga
+
     @Headers("User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:107.0) Gecko/20100101 Firefox/107.0",
               "Accept: image/avif,image/webp,*/*",
               "Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3",
               "Referer: https://chapmanganato.com/")
     @GET("/mangaPages")
-    suspend fun getMangaPages(
+    suspend fun getPages(
         @Header("url") url: String
     ): List<String>
 
