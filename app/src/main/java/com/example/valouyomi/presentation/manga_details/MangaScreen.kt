@@ -89,7 +89,7 @@ fun MangaScreen(
                                 contentScale = ContentScale.Crop
                             )
                         }
-                        Column(modifier = Modifier.padding(start = 10.dp, end = 10.dp)){
+                        Column(modifier = Modifier.padding(top = 30.dp, end = 30.dp)){
                             Text(text = manga.title, color = Color.White, fontSize = 20.sp)
                             //Auteurs
                             Text(text = if(manga.authors.count() > 0) manga.authors[0] else "", color = Color.White)
