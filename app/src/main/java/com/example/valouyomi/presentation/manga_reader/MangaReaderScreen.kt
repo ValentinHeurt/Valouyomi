@@ -2,16 +2,12 @@ package com.example.valouyomi.presentation.manga_reader
 
 import android.content.res.Configuration
 import android.widget.HorizontalScrollView
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -19,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.consumeAllChanges
+import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -38,6 +36,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import com.example.valouyomi.presentation.manga_details.MangaViewModel
+import kotlinx.coroutines.coroutineScope
 import retrofit2.http.Headers
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -60,30 +59,40 @@ fun MangaReaderScreen(
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
     val pages = viewModel.pages.value
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)){
+
+    val isScrollEnabled = remember { mutableStateOf(true)}
+    val pagerState = rememberPagerState()
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.Black)){
         VerticalPager(
+            state = pagerState,
+            userScrollEnabled = isScrollEnabled.value,
             pageCount = pages.count(),
             modifier = Modifier
-                .pointerInput(Unit){
-                    detectTransformGestures{ centroid, pan, zoom, dou ->
+                .pointerInput(Unit) {
+                    detectTransformGestures { centroid, pan, zoom, dou ->
                         zoom?.let {
-                            if((scale * it <= 0.75) || (scale * it >= 3)) else scale *= it
+                            if ((scale * it <= 0.75) || (scale * it >= 3)) else scale *= it
                         }
-                        pan?.let{
-                            if (scale != 1f){
+                        pan?.let {
+                            if (scale != 1f) {
                                 offsetX += it.x / scale
                                 offsetY += it.y / scale
                             }
                         }
                     }
-                }.pointerInput(Unit){
+                }
+                .pointerInput(Unit) {
                     detectTapGestures(
                         onDoubleTap = { position ->
                             println("ouioui")
-                            if (scale == 1f){
+                            if (scale == 1f) {
                                 scale = 2f
+                                isScrollEnabled.value = false;
                             } else {
                                 scale = 1f
+                                isScrollEnabled.value = true;
                             }
                             //doubleClickPosition = IntOffset(position.x.roundToInt(), position.y.roundToInt())
                             offsetX = calculateTargetOffsetX(position.x, scale)
@@ -91,6 +100,11 @@ fun MangaReaderScreen(
                         }
                     )
                 }
+                .scrollable(
+                    state = pagerState,
+                    enabled = false,
+                    orientation = Orientation.Vertical
+                )
         ) {
             val imageRequest = ImageRequest.Builder(LocalContext.current)
                 .data(pages[it])
