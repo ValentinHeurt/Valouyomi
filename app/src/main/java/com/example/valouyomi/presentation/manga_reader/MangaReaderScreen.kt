@@ -1,6 +1,10 @@
 package com.example.valouyomi.presentation.manga_reader
 
+import android.content.Context
 import android.content.res.Configuration
+import android.media.Image
+import android.util.DisplayMetrics
+import android.view.WindowManager
 import android.widget.HorizontalScrollView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -13,20 +17,19 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.ImageLoader
@@ -50,6 +53,12 @@ fun MangaReaderScreen(
     var scale by remember { mutableStateOf(1f) }
     var offsetX by remember { mutableStateOf(0f) }
     var offsetY by remember { mutableStateOf(0f) }
+
+    var boxWidth by remember { mutableStateOf(0) }
+    var boxHeight by remember { mutableStateOf(0) }
+
+    var imageSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+
     var doubleClickPosition by remember { mutableStateOf(IntOffset.Zero) }
     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
         scale *= zoomChange
@@ -70,7 +79,10 @@ fun MangaReaderScreen(
             userScrollEnabled = isScrollEnabled.value,
             pageCount = pages.count(),
             modifier = Modifier
-                .pointerInput(Unit) {
+                .onGloballyPositioned { coordinates ->
+                    boxWidth = coordinates.size.width
+                    boxHeight = coordinates.size.height
+                }.pointerInput(Unit) {
                     detectTransformGestures { centroid, pan, zoom, dou ->
                         zoom?.let {
                             if ((scale * it <= 0.75) || (scale * it >= 3)) else scale *= it
@@ -86,7 +98,6 @@ fun MangaReaderScreen(
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onDoubleTap = { position ->
-                            println("ouioui")
                             if (scale == 1f) {
                                 scale = 2f
                                 isScrollEnabled.value = false;
@@ -95,8 +106,25 @@ fun MangaReaderScreen(
                                 isScrollEnabled.value = true;
                             }
                             //doubleClickPosition = IntOffset(position.x.roundToInt(), position.y.roundToInt())
-                            offsetX = calculateTargetOffsetX(position.x, scale)
-                            offsetY = calculateTargetOffsetY(position.y, scale)
+
+                            if (scale != 1f) {
+
+                                val imageHeight = imageSize.height
+                                val imageWidth  = imageSize.width
+
+                                val minYOffset = -(imageHeight*scale) - boxHeight / 2
+                                val maxYOffset = (imageHeight*scale) - boxHeight / 2
+
+                                offsetX = ((boxWidth / 2) - position.x)
+                                offsetY = ((boxHeight / 2) - position.y).coerceIn(minYOffset,maxYOffset)
+                            }
+                            else{
+                                offsetX = 0f
+                                offsetY = 0f
+                            }
+
+                            println("x off : " +offsetX.toString())
+                            println("y off : " +offsetY.toString())
                         }
                     )
                 }
@@ -120,19 +148,13 @@ fun MangaReaderScreen(
                         scaleY = scale,
                         translationX = offsetX,
                         translationY = offsetY
-                    ),
+                    )
+                    .onGloballyPositioned { coordinates ->
+                        imageSize = coordinates.size.toSize()
+                    },
                 contentScale = ContentScale.Fit,
             )
             if (painter.state is AsyncImagePainter.State.Loading) CircularProgressIndicator()
         }
     }
-}
-private fun calculateTargetOffsetX(doubleClickX: Float, targetScale: Float): Float {
-    // Calculate the target offset X based on the double click position and target scale
-    return doubleClickX * (1 - targetScale)
-}
-
-private fun calculateTargetOffsetY(doubleClickY: Float, targetScale: Float): Float {
-    // Calculate the target offset Y based on the double click position and target scale
-    return doubleClickY * (1 - targetScale)
 }
