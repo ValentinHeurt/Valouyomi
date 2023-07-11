@@ -59,7 +59,7 @@ class MangaSearchViewModel @Inject constructor(
         getMangaThumbnails()
         getGenre()
         sortList.value = mangaRepository.getSortMap()
-        selectedSortProtocol.value = sortList.value.keys.first()
+        //selectedSortProtocol.value = sortList.value.keys.first()
     }
 
     fun getMangaThumbnails(){

@@ -8,6 +8,7 @@ import com.example.valouyomi.domain.models.Manga
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okhttp3.Headers
+import org.apache.commons.text.StringEscapeUtils
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
@@ -31,7 +32,8 @@ class MangaRepositoryImplManganato @Inject constructor(
     ): Flow<Resource<List<MangaThumbnail>>> = flow {
         try {
             emit(Resource.Loading())
-            val mangaThumbnails = api.searchManga(includedGenres, excludedGenres, textSearch, orderBy, status, page)
+            val textSearchEspaced = textSearch?.replace("\n", "")
+            val mangaThumbnails = api.searchManga(includedGenres, excludedGenres, textSearchEspaced, orderBy, status, page)
             emit(Resource.Success(mangaThumbnails))
         }catch (e: HttpException){
             emit(Resource.Error(e.localizedMessage ?: "An unexpected error occured"))

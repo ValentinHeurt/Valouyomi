@@ -26,6 +26,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.times
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -41,6 +42,7 @@ import coil.request.ImageRequest
 import com.example.valouyomi.presentation.manga_details.MangaViewModel
 import kotlinx.coroutines.coroutineScope
 import retrofit2.http.Headers
+import kotlin.math.absoluteValue
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
@@ -57,7 +59,7 @@ fun MangaReaderScreen(
     var boxWidth by remember { mutableStateOf(0) }
     var boxHeight by remember { mutableStateOf(0) }
 
-    var imageSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+    var imageSize by remember { mutableStateOf(Size.Zero) }
 
     var doubleClickPosition by remember { mutableStateOf(IntOffset.Zero) }
     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
@@ -69,28 +71,43 @@ fun MangaReaderScreen(
     val configuration = LocalConfiguration.current
     val pages = viewModel.pages.value
 
+
+    val screenHeight = configuration.screenHeightDp.dp
+    val screenWidth = configuration.screenWidthDp.dp
+
+
     val isScrollEnabled = remember { mutableStateOf(true)}
     val pagerState = rememberPagerState()
     Box(modifier = Modifier
         .fillMaxSize()
+        .onGloballyPositioned { coordinates ->
+            boxWidth = coordinates.size.width
+            boxHeight = coordinates.size.height
+        }
         .background(Color.Black)){
         VerticalPager(
             state = pagerState,
             userScrollEnabled = isScrollEnabled.value,
             pageCount = pages.count(),
             modifier = Modifier
-                .onGloballyPositioned { coordinates ->
-                    boxWidth = coordinates.size.width
-                    boxHeight = coordinates.size.height
-                }.pointerInput(Unit) {
+                .pointerInput(Unit) {
                     detectTransformGestures { centroid, pan, zoom, dou ->
                         zoom?.let {
                             if ((scale * it <= 0.75) || (scale * it >= 3)) else scale *= it
                         }
                         pan?.let {
+                            val imageHeight = imageSize.height
+                            val imageWidth  = imageSize.width
+
+                            val maxYOffset = (((imageHeight * scale) - boxHeight) / 2).coerceAtLeast(0f)
+                            val maxXOffset = (((imageWidth * scale) - boxWidth) / 2).coerceAtLeast(0f)
                             if (scale != 1f) {
+
                                 offsetX += it.x / scale
                                 offsetY += it.y / scale
+                                offsetX = offsetX.coerceIn(-maxXOffset, maxXOffset)
+                                offsetY = offsetY.coerceIn(-maxYOffset, maxYOffset)
+                                println("scale : $scale maxY : $maxYOffset offsetY : $offsetY")
                             }
                         }
                     }
@@ -106,22 +123,21 @@ fun MangaReaderScreen(
                                 isScrollEnabled.value = true;
                             }
                             //doubleClickPosition = IntOffset(position.x.roundToInt(), position.y.roundToInt())
+                            val imageHeight = imageSize.height
+                            val imageWidth  = imageSize.width
 
+                            val maxYOffset = (((imageHeight * scale) - boxHeight) / 2).coerceAtLeast(0f)
+                            println("imageHeight : $imageHeight BoxHeight : $boxHeight  max : $maxYOffset scale : $scale imageWidth : $imageWidth")
                             if (scale != 1f) {
 
-                                val imageHeight = imageSize.height
-                                val imageWidth  = imageSize.width
-
-                                val minYOffset = -(imageHeight*scale) - boxHeight / 2
-                                val maxYOffset = (imageHeight*scale) - boxHeight / 2
-
                                 offsetX = ((boxWidth / 2) - position.x)
-                                offsetY = ((boxHeight / 2) - position.y).coerceIn(minYOffset,maxYOffset)
+                                offsetY = ((boxHeight / 2) - position.y).coerceIn(-maxYOffset,maxYOffset)
                             }
                             else{
                                 offsetX = 0f
                                 offsetY = 0f
                             }
+
 
                             println("x off : " +offsetX.toString())
                             println("y off : " +offsetY.toString())
@@ -148,12 +164,14 @@ fun MangaReaderScreen(
                         scaleY = scale,
                         translationX = offsetX,
                         translationY = offsetY
-                    )
-                    .onGloballyPositioned { coordinates ->
-                        imageSize = coordinates.size.toSize()
-                    },
+                    ),
                 contentScale = ContentScale.Fit,
             )
+            val content = ContentScale.Fit
+            if (painter.state is AsyncImagePainter.State.Success){
+                val scaleFactor = content.computeScaleFactor(painter.intrinsicSize, Size(boxWidth.toFloat(), boxHeight.toFloat()))
+                imageSize = scaleFactor.times(painter.intrinsicSize)
+            }
             if (painter.state is AsyncImagePainter.State.Loading) CircularProgressIndicator()
         }
     }
