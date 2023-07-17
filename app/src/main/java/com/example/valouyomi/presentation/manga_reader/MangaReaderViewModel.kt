@@ -1,17 +1,19 @@
 package com.example.valouyomi.presentation.manga_reader
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
+import android.graphics.pdf.PdfDocument.Page
+import androidx.compose.runtime.*
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.valouyomi.common.Constants
 import com.example.valouyomi.common.Resource
 import com.example.valouyomi.domain.repository.MangaRepository
+import com.example.valouyomi.presentation.manga_reader.components.MangaPageImage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import okhttp3.Headers
+import okhttp3.internal.wait
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import javax.inject.Inject
@@ -28,10 +30,16 @@ class MangaReaderViewModel @Inject constructor(
 
     val pages: MutableState<List<String>> = mutableStateOf(emptyList())
     val mangaRepository = mangaRepositoryMap[providerParam]?: throw java.lang.IllegalArgumentException("No dependency found for : $providerParam")
-
+    var pageImageDatas: MutableState<List<MutableState<PageImageData>>> = mutableStateOf(emptyList())
     val isLoading: MutableState<Boolean> = mutableStateOf(false)
     val error: MutableState<String> = mutableStateOf("")
 
+    val isScrollEnabled: MutableState<Boolean> = mutableStateOf(true)
+
+    var composablesImages: List<@Composable () -> Unit> = emptyList()
+
+    var boxHeight: MutableState<Int> = mutableStateOf(0)
+    var boxWidth: MutableState<Int> = mutableStateOf(0)
     init {
         getChapter(urlParam)
         headers.value = mangaRepository.getHeaders()
@@ -42,6 +50,8 @@ class MangaReaderViewModel @Inject constructor(
             when(result){
                 is Resource.Success -> {
                     pages.value = result.data ?: emptyList()
+                    pageImageDatas = mutableStateOf(PrepareImageData())
+                    PrepareImageComposables()
                 }
                 is Resource.Error -> {
                     error.value = result.message ?: "Unknown error"
@@ -54,4 +64,12 @@ class MangaReaderViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
+    fun PrepareImageData(): List<MutableState<PageImageData>>{
+        return pages.value.map { mutableStateOf(PageImageData(mutableStateOf(0f), mutableStateOf(0f), mutableStateOf(1f), it)) }
+    }
+    fun PrepareImageComposables(){
+       // composablesImages = pageImageDatas.value.map { {MangaPageImage(url = it.value.url, pageImageData = it) }}
+    }
 }
+
+data class PageImageData(var offsetX: MutableState<Float>, var offsetY: MutableState<Float>, var scale: MutableState<Float>, var url: String)
