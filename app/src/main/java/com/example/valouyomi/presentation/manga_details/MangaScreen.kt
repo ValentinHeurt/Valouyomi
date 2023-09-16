@@ -51,7 +51,6 @@ fun MangaScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-
                 //Gradiant transparent vers couleur
                 Box(
                     modifier = Modifier
@@ -133,7 +132,9 @@ fun MangaScreen(
                 items(manga.chapters){chapter ->
                     ChapterPreview(chapter = chapter, modifier = Modifier.fillMaxWidth().padding(10.dp).clickable(onClick = {
                         val encodedUrl = URLEncoder.encode(chapter.chapterUrl, StandardCharsets.UTF_8.toString())
-                        navController.navigate(Screen.MangaReaderScreen.route + "/${encodedUrl}/${viewModel.providerParam}")
+                        navController.currentBackStackEntry?.savedStateHandle?.set(key = "chapters", value = manga.chapters)
+                        val mangaChapterIndex = manga.chapters.indexOf(chapter)
+                        navController.navigate(Screen.MangaReaderScreen.route + "/${encodedUrl}/${viewModel.providerParam}/${mangaChapterIndex}/${manga.title}")
                     }))
                 }
             }

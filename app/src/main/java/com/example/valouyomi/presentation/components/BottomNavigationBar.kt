@@ -41,7 +41,7 @@ fun Navigation(navController: NavHostController, modifier: Modifier){
         composable(Screen.MangaScreen.route + "/{${Constants.MANGA_URL_PARAM}}/{${Constants.PROVIDER_PARAM}}"){
             MangaScreen(navController = navController)
         }
-        composable(Screen.MangaReaderScreen.route + "/{${Constants.CHAPTER_URL_PARAM}}/{${Constants.PROVIDER_PARAM}}"){
+        composable(Screen.MangaReaderScreen.route + "/{${Constants.CHAPTER_URL_PARAM}}/{${Constants.PROVIDER_PARAM}}/{${Constants.CURRENT_CHAPTER_PARAM}}/{${Constants.MANGA_NAME_PARAM}}"){
             MangaReaderScreen(navController = navController)
         }
     }

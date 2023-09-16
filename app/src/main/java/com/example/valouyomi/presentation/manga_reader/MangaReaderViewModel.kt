@@ -2,13 +2,20 @@ package com.example.valouyomi.presentation.manga_reader
 
 import android.graphics.pdf.PdfDocument.Page
 import androidx.compose.runtime.*
+import androidx.compose.ui.geometry.Size
+import androidx.hilt.navigation.HiltViewModelFactory
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import com.example.valouyomi.common.Constants
 import com.example.valouyomi.common.Resource
+import com.example.valouyomi.domain.models.Chapter
 import com.example.valouyomi.domain.repository.MangaRepository
 import com.example.valouyomi.presentation.manga_reader.components.MangaPageImage
+import com.example.valouyomi.presentation.shared.MangaChapterSharedViewModel
+import dagger.hilt.android.internal.lifecycle.HiltViewModelFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -26,6 +33,9 @@ class MangaReaderViewModel @Inject constructor(
 
     val urlParam = URLDecoder.decode(savedStateHandle.get<String>(Constants.CHAPTER_URL_PARAM), StandardCharsets.UTF_8.toString())
     val providerParam = savedStateHandle.get<String>(Constants.PROVIDER_PARAM).toString()
+    var chaptersParam: List<Chapter>? = emptyList()
+    val mangaNameParam = savedStateHandle.get<String>(Constants.MANGA_NAME_PARAM).toString()
+    val currentChapterIndex = savedStateHandle.get<String>(Constants.CURRENT_CHAPTER_PARAM)?.toInt()
     val headers: MutableState<Headers> = mutableStateOf(Headers.headersOf("accept",""))
 
     val pages: MutableState<List<String>> = mutableStateOf(emptyList())
@@ -40,7 +50,12 @@ class MangaReaderViewModel @Inject constructor(
 
     var boxHeight: MutableState<Int> = mutableStateOf(0)
     var boxWidth: MutableState<Int> = mutableStateOf(0)
+
+    var pageList: MutableList<PageImageData> = arrayListOf()
+    var pageUnitList: MutableList<@Composable () -> Unit> = arrayListOf()
+
     init {
+        pageList = arrayListOf()
         getChapter(urlParam)
         headers.value = mangaRepository.getHeaders()
     }
@@ -50,8 +65,7 @@ class MangaReaderViewModel @Inject constructor(
             when(result){
                 is Resource.Success -> {
                     pages.value = result.data ?: emptyList()
-                    pageImageDatas = mutableStateOf(PrepareImageData())
-                    PrepareImageComposables()
+                    setupPageList()
                 }
                 is Resource.Error -> {
                     error.value = result.message ?: "Unknown error"
@@ -64,12 +78,11 @@ class MangaReaderViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
-    fun PrepareImageData(): List<MutableState<PageImageData>>{
-        return pages.value.map { mutableStateOf(PageImageData(mutableStateOf(0f), mutableStateOf(0f), mutableStateOf(1f), it)) }
-    }
-    fun PrepareImageComposables(){
-       // composablesImages = pageImageDatas.value.map { {MangaPageImage(url = it.value.url, pageImageData = it) }}
+    fun setupPageList(){
+        pageList = arrayListOf()
+        pages.value.forEach(){ pageList.add(PageImageData(mutableStateOf(0f), mutableStateOf(0f), mutableStateOf(1f), mutableStateOf(Size.Zero))) }
+        pages.value.forEachIndexed{ index, item -> pageUnitList.add(@Composable { MangaPageImage(url = item, pageImageData = pageList[index]) }) }
     }
 }
 
-data class PageImageData(var offsetX: MutableState<Float>, var offsetY: MutableState<Float>, var scale: MutableState<Float>, var url: String)
+data class PageImageData(var offsetX: MutableState<Float>, var offsetY: MutableState<Float>, var scaleFactor: MutableState<Float>, var imageSize: MutableState<Size>)
