@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.media.Image
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.GestureDetector
 import android.view.WindowManager
 import android.widget.HorizontalScrollView
@@ -68,11 +69,12 @@ fun MangaReaderScreen(
     var scrollOffset by remember { mutableStateOf(0f) }
     var isDragging by remember { mutableStateOf(false) }
     var canScrollBackward = mutableStateOf(true)
+    var hasPageChangeTrigger by remember { mutableStateOf(false)}
     var oldPage by remember { mutableStateOf(0) }
 
     viewModel.isScrollEnabled.value = ((viewModel.pageList.getOrNull(pagerState.currentPage)?.scaleFactor?.value ?: 1f) == 1f)
     if (pagerState.currentPage == 2) canScrollBackward.value = false
-    Scaffold(topBar = { MangaReaderTopInfo() }) {
+    //Scaffold(topBar = { MangaReaderTopInfo() }) {
         Box(modifier = Modifier
             .fillMaxSize()
             .onGloballyPositioned { coordinates ->
@@ -82,6 +84,7 @@ fun MangaReaderScreen(
             .pointerInput(Unit) {
                 detectTapGestures(
                     onDoubleTap = { position ->
+                        Log.i("ddddd","dddd")
                         val currentPage =
                             viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
                                 mutableStateOf(0f),
@@ -143,22 +146,65 @@ fun MangaReaderScreen(
                 detectDragGestures(onDragStart = {
                     isDragging = true
                     oldPage = pagerState.currentPage
+                    scrollOffset = 0f
+                    println("scroll enable " + viewModel.isScrollEnabled.value)
                     println("oldpage : $oldPage")
                 }, onDragEnd = {
+                    println("YAAAAAAAAAAAAAAAAAAAAAAAAA")
                     isDragging = false
-                    if (scrollOffset < 600f) {
-
-                        coroutineScope.launch {
-                            pagerState.scrollBy(-scrollOffset)
-                            scrollOffset = 0f
-                            println("oldpage : $oldPage after")
-                        }
-                    } else {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(oldPage + 1)
-                            println("oldpage :" + (oldPage + 1))
+                    println("scroll off set $scrollOffset")
+                    println("scroll enable " + viewModel.isScrollEnabled.value)
+                    if (scrollOffset > 0f){
+                        if (scrollOffset < 600f) {
+                            coroutineScope.launch {
+                                pagerState.scrollBy(-scrollOffset)
+                                scrollOffset = 0f
+                                println("oldpage : $oldPage after")
+                            }
+                        } else {
+                            coroutineScope.launch {
+                                val currentPage =
+                                    viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
+                                        mutableStateOf(0f),
+                                        mutableStateOf(0f),
+                                        mutableStateOf(1f),
+                                        mutableStateOf(Size.Zero)
+                                    )
+                                currentPage.scaleFactor.value = 1f
+                                currentPage.offsetX.value = 0f
+                                currentPage.offsetY.value = 0f
+                                pagerState.animateScrollToPage(oldPage + 1)
+                                println("oldpage :" + (oldPage + 1))
+                            }
                         }
                     }
+                    else{
+                        if (scrollOffset > -600f){
+                            coroutineScope.launch {
+                                pagerState.scrollBy(scrollOffset.absoluteValue)
+                                scrollOffset = 0f
+                                println("oldpage : $oldPage after")
+                            }
+                        }
+                        else{
+                            coroutineScope.launch {
+                                val currentPage =
+                                    viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
+                                        mutableStateOf(0f),
+                                        mutableStateOf(0f),
+                                        mutableStateOf(1f),
+                                        mutableStateOf(Size.Zero)
+                                    )
+                                currentPage.scaleFactor.value = 1f
+                                currentPage.offsetX.value = 0f
+                                currentPage.offsetY.value = 0f
+                                pagerState.animateScrollToPage(oldPage - 1)
+                                println("oldpage :" + (oldPage - 1))
+                            }
+                        }
+                    }
+
+                    hasPageChangeTrigger = false
                 }, onDrag = { change, dragAmount ->
                     val currentPage =
                         viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
@@ -181,14 +227,15 @@ fun MangaReaderScreen(
                             0f
                         )
                     if (currentPage.scaleFactor.value != 1f) {
-                        var isAlreadyMaxDown = false
                         var isMoreThanMaxDown = false
-                        if (currentPage.offsetY.value == -maxYOffset) isAlreadyMaxDown =
-                            true
+                        var isMoreThanMaxUp = false
 
                         currentPage.offsetX.value += dragAmount.x / currentPage.scaleFactor.value
                         currentPage.offsetY.value += dragAmount.y / currentPage.scaleFactor.value
-                        if (currentPage.offsetY.value < -maxYOffset) isMoreThanMaxDown = true
+                        println("current page val " + currentPage.offsetY.value)
+
+                        if (currentPage.offsetY.value < -maxYOffset + scrollOffset) isMoreThanMaxDown = true
+                        if (currentPage.offsetY.value > maxYOffset + scrollOffset) isMoreThanMaxUp = true
                         currentPage.offsetX.value =
                             currentPage.offsetX.value.coerceIn(
                                 -maxXOffset,
@@ -199,16 +246,93 @@ fun MangaReaderScreen(
                                 -maxYOffset,
                                 maxYOffset
                             )
+                        println("isMoreThan $isMoreThanMaxDown")
+                        println("isdrag $isDragging")
 
-                        if (isAlreadyMaxDown && isMoreThanMaxDown && isDragging) {
-                            if (pagerState.currentPage < viewModel.pages.value.size - 1) {
-                                triggerState++
-                                coroutineScope.launch {
-                                    pagerState.scrollBy(dragAmount.y.absoluteValue)
-                                    scrollOffset += dragAmount.y.absoluteValue
+                        if (isMoreThanMaxUp && isDragging){
+                            if (pagerState.currentPage != 1) {
+                                if (scrollOffset - dragAmount.y.absoluteValue >= -1000) {
+                                    coroutineScope.launch {
+                                        if (dragAmount.y < 0) {
+                                            pagerState.scroll {
+                                                scrollBy(dragAmount.y.absoluteValue)
+                                            }
+                                            //pagerState.scrollBy(dragAmount.y.absoluteValue)
+                                            println(scrollOffset)
+                                            println(pagerState.currentPage)
+                                            scrollOffset += dragAmount.y.absoluteValue
+                                        } else {
+                                            pagerState.scroll {
+                                                scrollBy(-dragAmount.y)
+                                            }
+                                            //pagerState.scrollBy(dragAmount.y.absoluteValue)
+                                            println(scrollOffset)
+                                            println(pagerState.currentPage)
+                                            scrollOffset -= dragAmount.y.absoluteValue
+                                        }
+                                    }
+                                }
+                                else{
+                                    coroutineScope.launch {
+                                        val currentPage =
+                                            viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
+                                                mutableStateOf(0f),
+                                                mutableStateOf(0f),
+                                                mutableStateOf(1f),
+                                                mutableStateOf(Size.Zero)
+                                            )
+                                        currentPage.scaleFactor.value = 1f
+                                        currentPage.offsetX.value = 0f
+                                        currentPage.offsetY.value = 0f
+                                        pagerState.animateScrollToPage(oldPage - 1)
+                                        println("oldpage :" + (oldPage - 1))
+                                    }
                                 }
                             }
+                        }
 
+                        if (isMoreThanMaxDown && isDragging) {
+                            if (pagerState.currentPage < viewModel.pages.value.size - 1) {
+                                triggerState++
+                                if (scrollOffset + dragAmount.y.absoluteValue <= 1000){
+                                    coroutineScope.launch {
+                                        if (dragAmount.y < 0){
+                                            pagerState.scroll {
+                                                scrollBy(dragAmount.y.absoluteValue)
+                                            }
+                                            //pagerState.scrollBy(dragAmount.y.absoluteValue)
+                                            println(scrollOffset)
+                                            println(pagerState.currentPage)
+                                            scrollOffset += dragAmount.y.absoluteValue
+                                        }
+                                        else{
+                                            pagerState.scroll {
+                                                scrollBy(-dragAmount.y)
+                                            }
+                                            //pagerState.scrollBy(dragAmount.y.absoluteValue)
+                                            println(scrollOffset)
+                                            println(pagerState.currentPage)
+                                            scrollOffset -= dragAmount.y.absoluteValue
+                                        }
+                                    }
+                                }
+                                else{
+                                    coroutineScope.launch {
+                                        val currentPage =
+                                            viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
+                                                mutableStateOf(0f),
+                                                mutableStateOf(0f),
+                                                mutableStateOf(1f),
+                                                mutableStateOf(Size.Zero)
+                                            )
+                                        currentPage.scaleFactor.value = 1f
+                                        currentPage.offsetX.value = 0f
+                                        currentPage.offsetY.value = 0f
+                                        pagerState.animateScrollToPage(oldPage + 1)
+                                        println("oldpage :" + (oldPage + 1))
+                                    }
+                                }
+                            }
                         }
                     }
                 })
@@ -232,4 +356,4 @@ fun MangaReaderScreen(
     }
 
 
-}
+//}

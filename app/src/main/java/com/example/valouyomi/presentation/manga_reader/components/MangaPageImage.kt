@@ -41,7 +41,6 @@ fun MangaPageImage(
         .headers(viewModel.headers.value)
         .build()
     val painter = rememberAsyncImagePainter(model = imageRequest)
-
     Image(
         painter = painter, contentDescription = "",
         modifier = pageModifier,
