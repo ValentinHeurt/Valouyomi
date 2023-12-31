@@ -44,7 +44,7 @@ fun MangaReaderTopInfo(
         title = { Column(modifier = Modifier
             .padding(5.dp)) {
             Text(text = viewModel.mangaNameParam, maxLines = 1, overflow =  TextOverflow.Ellipsis, fontSize = 15.sp)
-            Text(text = viewModel.chaptersParam[viewModel.currentChapterIndex].name, maxLines = 1, overflow =  TextOverflow.Ellipsis, fontSize = 12.sp)
+            Text(text = viewModel.currentChapterName.value, maxLines = 1, overflow =  TextOverflow.Ellipsis, fontSize = 12.sp)
         }},
         modifier = modifier
     )

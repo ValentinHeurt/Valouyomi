@@ -87,9 +87,28 @@ fun MangaReaderScreen(
     viewModel.currentPage.value = if (pagerState.currentPage == 0) 1 else pagerState.currentPage
     println("current page vm "  + viewModel.currentPage.value)
     println("size "  + viewModel.pageList.size)
-    if (pagerState.isScrollInProgress && pagerState.currentPage == viewModel.pageUnitList.size-1 && !viewModel.isUpdatingChapter.value){
+
+
+    if (pagerState.currentPage == viewModel.pageUnitList.size-1 && !viewModel.isUpdatingChapter.value){
         viewModel.nextPageSetup()
+        println("NEXT")
     }
+    
+    if (pagerState.currentPage == 0 && !viewModel.isUpdatingChapter.value){
+        viewModel.previousPageSetup()
+    }
+    
+    if (viewModel.chapterHasBeenUpdated.value){
+        if (viewModel.isNext.value){
+            ScrollToPage(coroutineScope, pagerState, 1)
+        }
+        else{
+            ScrollToPage(coroutineScope, pagerState, viewModel.pageUnitList.size-2)
+        }
+        viewModel.chapterHasBeenUpdated.value = false
+        viewModel.isUpdatingChapter.value = false
+    }
+
     //Scaffold(topBar = { MangaReaderTopInfo() }) {
     Box(modifier = Modifier
         .fillMaxSize()) {
