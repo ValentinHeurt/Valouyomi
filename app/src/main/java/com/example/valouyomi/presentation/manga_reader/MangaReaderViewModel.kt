@@ -13,7 +13,11 @@ import com.example.valouyomi.common.Constants
 import com.example.valouyomi.common.Resource
 import com.example.valouyomi.domain.models.Chapter
 import com.example.valouyomi.domain.repository.MangaRepository
+import com.example.valouyomi.presentation.manga_reader.components.MangaFirstPage
+import com.example.valouyomi.presentation.manga_reader.components.MangaLastPage
+import com.example.valouyomi.presentation.manga_reader.components.MangaNextChapterPage
 import com.example.valouyomi.presentation.manga_reader.components.MangaPageImage
+import com.example.valouyomi.presentation.manga_reader.components.MangaPreviousChapterPage
 import com.example.valouyomi.presentation.shared.MangaChapterSharedViewModel
 import dagger.hilt.android.internal.lifecycle.HiltViewModelFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,10 +37,12 @@ class MangaReaderViewModel @Inject constructor(
 
     val urlParam = URLDecoder.decode(savedStateHandle.get<String>(Constants.CHAPTER_URL_PARAM), StandardCharsets.UTF_8.toString())
     val providerParam = savedStateHandle.get<String>(Constants.PROVIDER_PARAM).toString()
-    var chaptersParam: List<Chapter>? = emptyList()
+    var chaptersParam: List<Chapter> = emptyList()
     val mangaNameParam = savedStateHandle.get<String>(Constants.MANGA_NAME_PARAM).toString()
-    val currentChapterIndex = savedStateHandle.get<String>(Constants.CURRENT_CHAPTER_PARAM)?.toInt()
+    var currentChapterIndex = savedStateHandle.get<String>(Constants.CURRENT_CHAPTER_PARAM)?.toInt() ?: 0
     val headers: MutableState<Headers> = mutableStateOf(Headers.headersOf("accept",""))
+
+    val isUpdatingChapter: MutableState<Boolean> = mutableStateOf(false)
 
     val pages: MutableState<List<String>> = mutableStateOf(emptyList())
     val mangaRepository = mangaRepositoryMap[providerParam]?: throw java.lang.IllegalArgumentException("No dependency found for : $providerParam")
@@ -46,7 +52,13 @@ class MangaReaderViewModel @Inject constructor(
 
     val isScrollEnabled: MutableState<Boolean> = mutableStateOf(true)
 
+    var isFirst = true
+
+    val isAppBarsVisible: MutableState<Boolean> = mutableStateOf(false)
+
     var composablesImages: List<@Composable () -> Unit> = emptyList()
+
+    var currentPage: MutableState<Int> = mutableStateOf(1)
 
     var boxHeight: MutableState<Int> = mutableStateOf(0)
     var boxWidth: MutableState<Int> = mutableStateOf(0)
@@ -65,7 +77,14 @@ class MangaReaderViewModel @Inject constructor(
             when(result){
                 is Resource.Success -> {
                     pages.value = result.data ?: emptyList()
-                    setupPageList()
+                    if (isFirst){
+                        setupPageList()
+                        isFirst = false
+                    }
+                    else{
+                        nextPageLoad()
+                    }
+
                 }
                 is Resource.Error -> {
                     error.value = result.message ?: "Unknown error"
@@ -74,6 +93,8 @@ class MangaReaderViewModel @Inject constructor(
                 is Resource.Loading -> {
                     isLoading.value = true
                 }
+
+                else -> {}
             }
         }.launchIn(viewModelScope)
     }
@@ -81,7 +102,49 @@ class MangaReaderViewModel @Inject constructor(
     fun setupPageList(){
         pageList = arrayListOf()
         pages.value.forEach(){ pageList.add(PageImageData(mutableStateOf(0f), mutableStateOf(0f), mutableStateOf(1f), mutableStateOf(Size.Zero))) }
+
+        if (currentChapterIndex == chaptersParam.size - 1) {
+            pageUnitList.add(@Composable { MangaFirstPage() })
+        }
+        else{
+            pageUnitList.add(@Composable { MangaPreviousChapterPage(currentChapter = chaptersParam[currentChapterIndex].name, previousChapter = chaptersParam[currentChapterIndex+1].name) })
+        }
+
         pages.value.forEachIndexed{ index, item -> pageUnitList.add(@Composable { MangaPageImage(url = item, pageImageData = pageList[index]) }) }
+
+        if (currentChapterIndex == 0){
+            pageUnitList.add(@Composable { MangaLastPage()})
+        }
+        else{
+            pageUnitList.add(@Composable { MangaNextChapterPage(finishedChapter = chaptersParam[currentChapterIndex].name, nextChapter = chaptersParam[currentChapterIndex-1].name) })
+        }
+    }
+    //TEST
+    fun nextPageSetup(){
+        isUpdatingChapter.value = true
+        currentChapterIndex -= 1
+        pages.value = emptyList()
+        getChapter(chaptersParam[currentChapterIndex].chapterUrl)
+    }
+    fun nextPageLoad(){
+        pageList = arrayListOf()
+        pages.value.forEach(){ pageList.add(PageImageData(mutableStateOf(0f), mutableStateOf(0f), mutableStateOf(1f), mutableStateOf(Size.Zero))) }
+
+        if (currentChapterIndex == chaptersParam.size - 1) {
+            pageUnitList.add(@Composable { MangaFirstPage() })
+        }
+        else{
+            pageUnitList.add(@Composable { MangaPreviousChapterPage(currentChapter = chaptersParam[currentChapterIndex].name, previousChapter = chaptersParam[currentChapterIndex+1].name) })
+        }
+
+        pages.value.forEachIndexed{ index, item -> pageUnitList.add(@Composable { MangaPageImage(url = item, pageImageData = pageList[index]) }) }
+
+        if (currentChapterIndex == 0){
+            pageUnitList.add(@Composable { MangaLastPage()})
+        }
+        else{
+            pageUnitList.add(@Composable { MangaNextChapterPage(finishedChapter = chaptersParam[currentChapterIndex].name, nextChapter = chaptersParam[currentChapterIndex-1].name) })
+        }
     }
 }
 

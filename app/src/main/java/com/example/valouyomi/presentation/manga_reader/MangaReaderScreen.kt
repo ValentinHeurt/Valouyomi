@@ -13,6 +13,8 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -20,7 +22,10 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -45,9 +50,14 @@ import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import com.example.valouyomi.domain.models.Chapter
+import com.example.valouyomi.presentation.Screen
 import com.example.valouyomi.presentation.manga_reader.components.MangaPageImage
+import com.example.valouyomi.presentation.manga_reader.components.MangaReaderBottomInfo
 import com.example.valouyomi.presentation.manga_reader.components.MangaReaderTopInfo
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import kotlin.math.absoluteValue
 
 @SuppressLint("UnrememberedMutableState", "UnusedMaterialScaffoldPaddingParameter")
@@ -57,10 +67,10 @@ fun MangaReaderScreen(
     navController: NavController,
     viewModel: MangaReaderViewModel = hiltViewModel()
 ){
-    viewModel.chaptersParam = navController.previousBackStackEntry?.savedStateHandle?.get<List<Chapter>>("chapters")
+    viewModel.chaptersParam = navController.previousBackStackEntry?.savedStateHandle?.get<List<Chapter>>("chapters") ?: emptyList()
     var imageSize by remember { mutableStateOf(Size.Zero) }
     val pages = viewModel.composablesImages
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState(initialPage = 1)
     var doubleClickPosition by remember { mutableStateOf(IntOffset.Zero) }
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
@@ -72,9 +82,17 @@ fun MangaReaderScreen(
     var hasPageChangeTrigger by remember { mutableStateOf(false)}
     var oldPage by remember { mutableStateOf(0) }
 
-    viewModel.isScrollEnabled.value = ((viewModel.pageList.getOrNull(pagerState.currentPage)?.scaleFactor?.value ?: 1f) == 1f)
-    if (pagerState.currentPage == 2) canScrollBackward.value = false
+
+    viewModel.isScrollEnabled.value = ((viewModel.pageList.getOrNull(pagerState.currentPage-1)?.scaleFactor?.value ?: 1f) == 1f)
+    viewModel.currentPage.value = if (pagerState.currentPage == 0) 1 else pagerState.currentPage
+    println("current page vm "  + viewModel.currentPage.value)
+    println("size "  + viewModel.pageList.size)
+    if (pagerState.isScrollInProgress && pagerState.currentPage == viewModel.pageUnitList.size-1 && !viewModel.isUpdatingChapter.value){
+        viewModel.nextPageSetup()
+    }
     //Scaffold(topBar = { MangaReaderTopInfo() }) {
+    Box(modifier = Modifier
+        .fillMaxSize()) {
         Box(modifier = Modifier
             .fillMaxSize()
             .onGloballyPositioned { coordinates ->
@@ -83,62 +101,71 @@ fun MangaReaderScreen(
             }
             .pointerInput(Unit) {
                 detectTapGestures(
+                    onTap = {
+                        viewModel.isAppBarsVisible.value = !viewModel.isAppBarsVisible.value
+                    },
                     onDoubleTap = { position ->
-                        Log.i("ddddd","dddd")
-                        val currentPage =
-                            viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
-                                mutableStateOf(0f),
-                                mutableStateOf(0f),
-                                mutableStateOf(1f),
-                                mutableStateOf(Size.Zero)
-                            )
-                        if (currentPage.scaleFactor.value == 1f) {
-                            currentPage.scaleFactor.value = 2f
-                            viewModel.isScrollEnabled.value = false;
-                        } else {
-                            currentPage.scaleFactor.value = 1f
-                            viewModel.isScrollEnabled.value = true;
-                        }
-                        //doubleClickPosition = IntOffset(position.x.roundToInt(), position.y.roundToInt())
-                        val imageHeight =
-                            currentPage.imageSize.value.height
-                        val imageWidth =
-                            currentPage.imageSize.value.width
+                        if (pagerState.currentPage != 0 && pagerState.currentPage != viewModel.pageUnitList.size) {
 
-                        val maxYOffset =
-                            (((imageHeight * currentPage.scaleFactor.value) - viewModel.boxHeight.value) / 2).coerceAtLeast(
-                                0f
-                            )
-                        if (currentPage.scaleFactor.value != 1f) {
+                            val currentPage =
+                                viewModel.pageList.getOrNull(pagerState.currentPage - 1)
+                                    ?: PageImageData(
+                                        mutableStateOf(0f),
+                                        mutableStateOf(0f),
+                                        mutableStateOf(1f),
+                                        mutableStateOf(Size.Zero)
+                                    )
+                            if (currentPage.scaleFactor.value == 1f) {
+                                currentPage.scaleFactor.value = 2f
+                                viewModel.isScrollEnabled.value = false;
+                            } else {
+                                currentPage.scaleFactor.value = 1f
+                                viewModel.isScrollEnabled.value = true;
+                            }
+                            //doubleClickPosition = IntOffset(position.x.roundToInt(), position.y.roundToInt())
+                            val imageHeight =
+                                currentPage.imageSize.value.height
+                            val imageWidth =
+                                currentPage.imageSize.value.width
 
-                            currentPage.offsetX.value =
-                                ((viewModel.boxWidth.value / 2) - position.x)
-                            currentPage.offsetY.value =
-                                ((viewModel.boxHeight.value / 2) - position.y).coerceIn(
-                                    -maxYOffset,
-                                    maxYOffset
+                            val maxYOffset =
+                                (((imageHeight * currentPage.scaleFactor.value) - viewModel.boxHeight.value) / 2).coerceAtLeast(
+                                    0f
                                 )
-                        } else {
-                            currentPage.offsetX.value = 0f
-                            currentPage.offsetY.value = 0f
+                            if (currentPage.scaleFactor.value != 1f) {
+
+                                currentPage.offsetX.value =
+                                    ((viewModel.boxWidth.value / 2) - position.x)
+                                currentPage.offsetY.value =
+                                    ((viewModel.boxHeight.value / 2) - position.y).coerceIn(
+                                        -maxYOffset,
+                                        maxYOffset
+                                    )
+                            } else {
+                                currentPage.offsetX.value = 0f
+                                currentPage.offsetY.value = 0f
+                            }
                         }
                     }
                 )
             }
             .pointerInput(Unit) {
                 detectTransformGestures { centroid, pan, zoom, dou ->
-                    val currentPage =
-                        viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
-                            mutableStateOf(0f),
-                            mutableStateOf(0f),
-                            mutableStateOf(1f),
-                            mutableStateOf(Size.Zero)
-                        )
-                    zoom?.let {
-                        if ((currentPage.scaleFactor.value * it <= 0.75) || (currentPage.scaleFactor.value * it >= 3)) else currentPage.scaleFactor.value *= it
-                    }
-                    pan?.let {
+                    if (pagerState.currentPage != 0 && pagerState.currentPage != viewModel.pageUnitList.size) {
+                        val currentPage =
+                            viewModel.pageList.getOrNull(pagerState.currentPage - 1)
+                                ?: PageImageData(
+                                    mutableStateOf(0f),
+                                    mutableStateOf(0f),
+                                    mutableStateOf(1f),
+                                    mutableStateOf(Size.Zero)
+                                )
+                        zoom?.let {
+                            if ((currentPage.scaleFactor.value * it <= 0.75) || (currentPage.scaleFactor.value * it >= 3)) else currentPage.scaleFactor.value *= it
+                        }
+                        pan?.let {
 
+                        }
                     }
                 }
             }
@@ -147,59 +174,50 @@ fun MangaReaderScreen(
                     isDragging = true
                     oldPage = pagerState.currentPage
                     scrollOffset = 0f
-                    println("scroll enable " + viewModel.isScrollEnabled.value)
-                    println("oldpage : $oldPage")
                 }, onDragEnd = {
-                    println("YAAAAAAAAAAAAAAAAAAAAAAAAA")
                     isDragging = false
-                    println("scroll off set $scrollOffset")
-                    println("scroll enable " + viewModel.isScrollEnabled.value)
-                    if (scrollOffset > 0f){
+                    if (scrollOffset > 0f) {
                         if (scrollOffset < 600f) {
                             coroutineScope.launch {
                                 pagerState.scrollBy(-scrollOffset)
                                 scrollOffset = 0f
-                                println("oldpage : $oldPage after")
                             }
                         } else {
                             coroutineScope.launch {
                                 val currentPage =
-                                    viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
-                                        mutableStateOf(0f),
-                                        mutableStateOf(0f),
-                                        mutableStateOf(1f),
-                                        mutableStateOf(Size.Zero)
-                                    )
+                                    viewModel.pageList.getOrNull(pagerState.currentPage - 1)
+                                        ?: PageImageData(
+                                            mutableStateOf(0f),
+                                            mutableStateOf(0f),
+                                            mutableStateOf(1f),
+                                            mutableStateOf(Size.Zero)
+                                        )
                                 currentPage.scaleFactor.value = 1f
                                 currentPage.offsetX.value = 0f
                                 currentPage.offsetY.value = 0f
                                 pagerState.animateScrollToPage(oldPage + 1)
-                                println("oldpage :" + (oldPage + 1))
                             }
                         }
-                    }
-                    else{
-                        if (scrollOffset > -600f){
+                    } else {
+                        if (scrollOffset > -600f) {
                             coroutineScope.launch {
                                 pagerState.scrollBy(scrollOffset.absoluteValue)
                                 scrollOffset = 0f
-                                println("oldpage : $oldPage after")
                             }
-                        }
-                        else{
+                        } else {
                             coroutineScope.launch {
                                 val currentPage =
-                                    viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
-                                        mutableStateOf(0f),
-                                        mutableStateOf(0f),
-                                        mutableStateOf(1f),
-                                        mutableStateOf(Size.Zero)
-                                    )
+                                    viewModel.pageList.getOrNull(pagerState.currentPage - 1)
+                                        ?: PageImageData(
+                                            mutableStateOf(0f),
+                                            mutableStateOf(0f),
+                                            mutableStateOf(1f),
+                                            mutableStateOf(Size.Zero)
+                                        )
                                 currentPage.scaleFactor.value = 1f
                                 currentPage.offsetX.value = 0f
                                 currentPage.offsetY.value = 0f
                                 pagerState.animateScrollToPage(oldPage - 1)
-                                println("oldpage :" + (oldPage - 1))
                             }
                         }
                     }
@@ -207,7 +225,7 @@ fun MangaReaderScreen(
                     hasPageChangeTrigger = false
                 }, onDrag = { change, dragAmount ->
                     val currentPage =
-                        viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
+                        viewModel.pageList.getOrNull(pagerState.currentPage - 1) ?: PageImageData(
                             mutableStateOf(0f),
                             mutableStateOf(0f),
                             mutableStateOf(1f),
@@ -232,10 +250,11 @@ fun MangaReaderScreen(
 
                         currentPage.offsetX.value += dragAmount.x / currentPage.scaleFactor.value
                         currentPage.offsetY.value += dragAmount.y / currentPage.scaleFactor.value
-                        println("current page val " + currentPage.offsetY.value)
 
-                        if (currentPage.offsetY.value < -maxYOffset + scrollOffset) isMoreThanMaxDown = true
-                        if (currentPage.offsetY.value > maxYOffset + scrollOffset) isMoreThanMaxUp = true
+                        if (currentPage.offsetY.value < -maxYOffset + scrollOffset) isMoreThanMaxDown =
+                            true
+                        if (currentPage.offsetY.value > maxYOffset + scrollOffset) isMoreThanMaxUp =
+                            true
                         currentPage.offsetX.value =
                             currentPage.offsetX.value.coerceIn(
                                 -maxXOffset,
@@ -246,11 +265,9 @@ fun MangaReaderScreen(
                                 -maxYOffset,
                                 maxYOffset
                             )
-                        println("isMoreThan $isMoreThanMaxDown")
-                        println("isdrag $isDragging")
 
-                        if (isMoreThanMaxUp && isDragging){
-                            if (pagerState.currentPage != 1) {
+                        if (isMoreThanMaxUp && isDragging) {
+                            if (pagerState.currentPage > 1) {
                                 if (scrollOffset - dragAmount.y.absoluteValue >= -1000) {
                                     coroutineScope.launch {
                                         if (dragAmount.y < 0) {
@@ -258,78 +275,67 @@ fun MangaReaderScreen(
                                                 scrollBy(dragAmount.y.absoluteValue)
                                             }
                                             //pagerState.scrollBy(dragAmount.y.absoluteValue)
-                                            println(scrollOffset)
-                                            println(pagerState.currentPage)
                                             scrollOffset += dragAmount.y.absoluteValue
                                         } else {
                                             pagerState.scroll {
                                                 scrollBy(-dragAmount.y)
                                             }
                                             //pagerState.scrollBy(dragAmount.y.absoluteValue)
-                                            println(scrollOffset)
-                                            println(pagerState.currentPage)
                                             scrollOffset -= dragAmount.y.absoluteValue
                                         }
                                     }
-                                }
-                                else{
+                                } else {
                                     coroutineScope.launch {
                                         val currentPage =
-                                            viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
-                                                mutableStateOf(0f),
-                                                mutableStateOf(0f),
-                                                mutableStateOf(1f),
-                                                mutableStateOf(Size.Zero)
-                                            )
+                                            viewModel.pageList.getOrNull(pagerState.currentPage - 1)
+                                                ?: PageImageData(
+                                                    mutableStateOf(0f),
+                                                    mutableStateOf(0f),
+                                                    mutableStateOf(1f),
+                                                    mutableStateOf(Size.Zero)
+                                                )
                                         currentPage.scaleFactor.value = 1f
                                         currentPage.offsetX.value = 0f
                                         currentPage.offsetY.value = 0f
                                         pagerState.animateScrollToPage(oldPage - 1)
-                                        println("oldpage :" + (oldPage - 1))
                                     }
                                 }
                             }
                         }
 
                         if (isMoreThanMaxDown && isDragging) {
-                            if (pagerState.currentPage < viewModel.pages.value.size - 1) {
+                            if (pagerState.currentPage - 1 < viewModel.pages.value.size - 1) {
                                 triggerState++
-                                if (scrollOffset + dragAmount.y.absoluteValue <= 1000){
+                                if (scrollOffset + dragAmount.y.absoluteValue <= 1000) {
                                     coroutineScope.launch {
-                                        if (dragAmount.y < 0){
+                                        if (dragAmount.y < 0) {
                                             pagerState.scroll {
                                                 scrollBy(dragAmount.y.absoluteValue)
                                             }
                                             //pagerState.scrollBy(dragAmount.y.absoluteValue)
-                                            println(scrollOffset)
-                                            println(pagerState.currentPage)
                                             scrollOffset += dragAmount.y.absoluteValue
-                                        }
-                                        else{
+                                        } else {
                                             pagerState.scroll {
                                                 scrollBy(-dragAmount.y)
                                             }
                                             //pagerState.scrollBy(dragAmount.y.absoluteValue)
-                                            println(scrollOffset)
-                                            println(pagerState.currentPage)
                                             scrollOffset -= dragAmount.y.absoluteValue
                                         }
                                     }
-                                }
-                                else{
+                                } else {
                                     coroutineScope.launch {
                                         val currentPage =
-                                            viewModel.pageList.getOrNull(pagerState.currentPage) ?: PageImageData(
-                                                mutableStateOf(0f),
-                                                mutableStateOf(0f),
-                                                mutableStateOf(1f),
-                                                mutableStateOf(Size.Zero)
-                                            )
+                                            viewModel.pageList.getOrNull(pagerState.currentPage - 1)
+                                                ?: PageImageData(
+                                                    mutableStateOf(0f),
+                                                    mutableStateOf(0f),
+                                                    mutableStateOf(1f),
+                                                    mutableStateOf(Size.Zero)
+                                                )
                                         currentPage.scaleFactor.value = 1f
                                         currentPage.offsetX.value = 0f
                                         currentPage.offsetY.value = 0f
                                         pagerState.animateScrollToPage(oldPage + 1)
-                                        println("oldpage :" + (oldPage + 1))
                                     }
                                 }
                             }
@@ -337,11 +343,11 @@ fun MangaReaderScreen(
                     }
                 })
             }
-            .background(Color.Black)){
+            .background(Color.Black)) {
             VerticalPager(
                 state = pagerState,
                 userScrollEnabled = viewModel.isScrollEnabled.value,
-                pageCount = viewModel.pages.value.size,
+                pageCount = viewModel.pageUnitList.size,
                 beyondBoundsPageCount = 10,
                 modifier = Modifier
                     .scrollable(
@@ -350,10 +356,38 @@ fun MangaReaderScreen(
                         orientation = Orientation.Vertical
                     )
             ) {
+                println(it)
                 viewModel.pageUnitList.getOrNull(it)?.invoke()
             }
         }
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .scale(if (viewModel.isAppBarsVisible.value) 1f else 0f)){
+            MangaReaderTopInfo(modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp))
+        }
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .align(Alignment.BottomCenter)
+            .scale(if (viewModel.isAppBarsVisible.value) 1f else 0f)){
+            MangaReaderBottomInfo(modifier = Modifier, onValueChange = {
+                coroutineScope.launch {
+                    pagerState.animateScrollToPage(if (it == 0f) it.toInt()+1 else it.toInt())
+                }
+            })
+        }
+        
+
+    }
     }
 
+@OptIn(ExperimentalFoundationApi::class)
+fun ScrollToPage(coroutineScope: CoroutineScope, pagerState: PagerState, page: Int){
+    coroutineScope.launch {
+        pagerState.scrollToPage(page)
+    }
+}
 
 //}
